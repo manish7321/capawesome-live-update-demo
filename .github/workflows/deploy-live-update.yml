@@ -1,0 +1,52 @@
+name: Deploy Live Update
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to Capawesome Cloud
+        uses: capawesome-team/cloud-live-update-action@v0.0.7
+        with:
+          # The Capawesome Cloud app ID
+          # Get this from https://console.capawesome.io
+          appId: ${{ secrets.CAPAWESOME_APP_ID }}
+          
+          # The channel to deploy the update to
+          # For example: 'production', 'staging', 'dev-1'
+          channel: ${{ vars.LIVE_UPDATE_CHANNEL || 'dev-1' }}
+          
+          # The commit message that the bundle is linked to
+          commitMessage: ${{ github.event.head_commit.message }}
+          
+          # The commit ref that the bundle is linked to
+          commitRef: ${{ github.ref }}
+          
+          # The commit SHA that the bundle is linked to
+          commitSha: ${{ github.sha }}
+          
+          # The path to the bundle to upload (the dist folder from vite build)
+          # Must be a folder or zip archive
+          path: dist
+          
+          # The Capawesome Cloud API token
+          # Store this as a secret in your GitHub repository
+          token: ${{ secrets.CAPAWESOME_API_TOKEN }}
