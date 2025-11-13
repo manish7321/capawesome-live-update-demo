@@ -25,8 +25,8 @@ jobs:
 
       - name: Login to Capawesome Cloud
         env:
-          CAPAWESOME_CLOUD_TOKEN: ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
-        run: npx @capawesome/cli login --token "$CAPAWESOME_CLOUD_TOKEN"
+          CAPAWESOME_API_TOKEN: ${{ secrets.CAPAWESOME_API_TOKEN }}
+        run: npx @capawesome/cli login --token "$CAPAWESOME_API_TOKEN"
 
       - name: Create manifest-based (delta-friendly) bundle on Capawesome Cloud
         env:
