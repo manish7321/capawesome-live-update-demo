@@ -28,19 +28,30 @@ jobs:
           CAPAWESOME_API_TOKEN: ${{ secrets.CAPAWESOME_API_TOKEN }}
         run: npx @capawesome/cli login --token "$CAPAWESOME_API_TOKEN"
 
-      - name: Create manifest-based (delta-friendly) bundle on Capawesome Cloud
+      - name: Ensure live update channel exists
         env:
           CAPAWESOME_APP_ID: ${{ secrets.CAPAWESOME_APP_ID }}
         run: |
-          echo "Creating manifest-based bundle for channel '${{ github.event.inputs.channel }}'"
+          CHANNEL="${{ vars.LIVE_UPDATE_CHANNEL }}"
+          if npx @capawesome/cli apps:channels:list --appId "$CAPAWESOME_APP_ID" | grep -q -- "$CHANNEL"; then
+            echo "Channel '$CHANNEL' exists."
+          else
+            npx @capawesome/cli apps:channels:create --appId "$CAPAWESOME_APP_ID" --name "$CHANNEL" || { echo "Failed to create channel '$CHANNEL'"; exit 1; }
+            echo "Channel '$CHANNEL' created."
+          fi
+
+      - name: Create manifest-based bundle on Capawesome Cloud
+        env:
+          CAPAWESOME_APP_ID: ${{ secrets.CAPAWESOME_APP_ID }}
+        run: |
           npx @capawesome/cli apps:bundles:create \
             --appId "$CAPAWESOME_APP_ID" \
             --path dist \
-            --channel "${{ vars.LIVE_UPDATE_CHANNEL || 'dev-1' }}" \
+            --channel "${{ vars.LIVE_UPDATE_CHANNEL }}" \
             --artifact-type manifest \
             --commit-message "${{ github.event.head_commit.message || 'manual deploy' }}" \
             --commit-ref "${{ github.ref }}" \
             --commit-sha "${{ github.sha }}"
 
       - name: Done
-        run: echo "✅ Manifest-based bundle created successfully (check Capawesome Console)."
+        run: echo "Manifest-based bundle created successfully."
