@@ -1,4 +1,4 @@
-name: Deploy Live Update
+name: Deploy Live Update to Capawesome Cloud
 
 on:
   workflow_dispatch:
@@ -23,30 +23,24 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to Capawesome Cloud
-        uses: capawesome-team/cloud-live-update-action@v0.0.7
-        with:
-          # The Capawesome Cloud app ID
-          # Get this from https://console.capawesome.io
-          appId: ${{ secrets.CAPAWESOME_APP_ID }}
-          
-          # The channel to deploy the update to
-          # For example: 'production', 'staging', 'dev-1'
-          channel: ${{ vars.LIVE_UPDATE_CHANNEL || 'dev-1' }}
-          
-          # The commit message that the bundle is linked to
-          commitMessage: ${{ github.event.head_commit.message }}
-          
-          # The commit ref that the bundle is linked to
-          commitRef: ${{ github.ref }}
-          
-          # The commit SHA that the bundle is linked to
-          commitSha: ${{ github.sha }}
-          
-          # The path to the bundle to upload (the dist folder from vite build)
-          # Must be a folder or zip archive
-          path: dist
-          
-          # The Capawesome Cloud API token
-          # Store this as a secret in your GitHub repository
-          token: ${{ secrets.CAPAWESOME_API_TOKEN }}
+      - name: Login to Capawesome Cloud
+        env:
+          CAPAWESOME_CLOUD_TOKEN: ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
+        run: npx @capawesome/cli login --token "$CAPAWESOME_CLOUD_TOKEN"
+
+      - name: Create manifest-based (delta-friendly) bundle on Capawesome Cloud
+        env:
+          CAPAWESOME_APP_ID: ${{ secrets.CAPAWESOME_APP_ID }}
+        run: |
+          echo "Creating manifest-based bundle for channel '${{ github.event.inputs.channel }}'"
+          npx @capawesome/cli apps:bundles:create \
+            --appId "$CAPAWESOME_APP_ID" \
+            --path dist \
+            --channel "${{ vars.LIVE_UPDATE_CHANNEL || 'dev-1' }}" \
+            --artifact-type manifest \
+            --commit-message "${{ github.event.head_commit.message || 'manual deploy' }}" \
+            --commit-ref "${{ github.ref }}" \
+            --commit-sha "${{ github.sha }}"
+
+      - name: Done
+        run: echo "✅ Manifest-based bundle created successfully (check Capawesome Console)."
