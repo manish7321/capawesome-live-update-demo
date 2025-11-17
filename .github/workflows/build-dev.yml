@@ -29,10 +29,10 @@ jobs:
       - name: Build
         env:
           CI: false
-          REACT_APP_CAPACITOR_HOT_UPDATE_APP_ID: ${{ secrets.CAPAWESOME_APP_ID }}
-          REACT_APP_ENV: ${{vars.REACT_APP_ENV_DEV}}
+          VITE_CAPACITOR_HOT_UPDATE_APP_ID: ${{ secrets.CAPAWESOME_APP_ID }}
+          VITE_REACT_APP_ENV: ${{vars.REACT_APP_ENV_DEV}}
 
-        run: npm run build
+        run: npm run build && npx cap sync
 
       - name: Make gradlew executable
         working-directory: ./android/
