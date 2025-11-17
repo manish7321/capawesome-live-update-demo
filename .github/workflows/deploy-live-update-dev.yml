@@ -20,6 +20,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Extract versionName from Android build.gradle
+        id: version
+        run: |
+          VERSION_NAME=$(grep versionName android/app/build.gradle | sed -E 's/.*"([0-9.]+)".*/\1/')
+          echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
+
+          # Extract major version (before first dot)
+          MAJOR_VERSION=$(echo "$VERSION_NAME" | cut -d '.' -f 1)
+          echo "majorVersion=$MAJOR_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Define Live Update Channel
+        id: channel
+        run: |
+          ENV_NAME="${{ vars.REACT_APP_ENV_DEV }}"   # dev OR prod
+          MAJOR="${{ steps.version.outputs.majorVersion }}"
+          CHANNEL_NAME="${ENV_NAME}-${MAJOR}"
+
+          echo "channelName=$CHANNEL_NAME" >> $GITHUB_OUTPUT
+          echo "Using channel: $CHANNEL_NAME"
+
       - name: Build project
         run: npm run build
 
@@ -32,22 +52,27 @@ jobs:
         env:
           CAPAWESOME_APP_ID: ${{ secrets.CAPAWESOME_APP_ID }}
         run: |
-          CHANNEL="${{ vars.LIVE_UPDATE_CHANNEL }}"
-          if npx @capawesome/cli apps:channels:list --appId "$CAPAWESOME_APP_ID" | grep -q -- "$CHANNEL"; then
+          CHANNEL="${{ steps.channel.outputs.channelName }}"
+          echo "Checking channel: $CHANNEL"
+
+          if npx @capawesome/cli apps:channels:list --appId "$CAPAWESOME_APP_ID" | grep -q "$CHANNEL"; then
             echo "Channel '$CHANNEL' exists."
           else
-            npx @capawesome/cli apps:channels:create --appId "$CAPAWESOME_APP_ID" --name "$CHANNEL" || { echo "Failed to create channel '$CHANNEL'"; exit 1; }
+            echo "Channel '$CHANNEL' does not exist. Creating..."
+            npx @capawesome/cli apps:channels:create --appId "$CAPAWESOME_APP_ID" --name "$CHANNEL"
             echo "Channel '$CHANNEL' created."
           fi
 
-      - name: Create manifest-based bundle on Capawesome Cloud
+      - name: Upload manifest-based bundle to Capawesome Cloud
         env:
           CAPAWESOME_APP_ID: ${{ secrets.CAPAWESOME_APP_ID }}
         run: |
+          CHANNEL="${{ steps.channel.outputs.channelName }}"
+
           npx @capawesome/cli apps:bundles:create \
             --appId "$CAPAWESOME_APP_ID" \
-            --path dist \
-            --channel "${{ vars.LIVE_UPDATE_CHANNEL }}" \
+            --path build \
+            --channel "$CHANNEL" \
             --artifact-type manifest \
             --commit-message "${{ github.event.head_commit.message || 'manual deploy' }}" \
             --commit-ref "${{ github.ref }}" \
