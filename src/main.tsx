@@ -15,7 +15,7 @@ async function checkForUpdate() {
       const majorVersion = versionName.split(".")[0];
       console.log("majorVersion: 👮‍♀️👮", majorVersion);
       const { bundleId: currentBundleId } = await LiveUpdate.getCurrentBundle();
-      const result = await LiveUpdate.fetchLatestBundle({ channel: `${import.meta.env.REACT_APP_ENV}-${majorVersion}` });
+      const result = await LiveUpdate.fetchLatestBundle({ channel: `${import.meta.env.VITE_REACT_APP_ENV}-${majorVersion}` });
       console.log("LiveUpdate fetch latest bundle result 💁", result);
       if (result.bundleId && result.downloadUrl && currentBundleId !== result.bundleId) {
         await SplashScreen.hide();
@@ -23,7 +23,7 @@ async function checkForUpdate() {
         if (acceptUpdate) {
           await SplashScreen.show({ autoHide: false });
           const downloadStart = performance.now();
-          await LiveUpdate.sync({channel: `${import.meta.env.REACT_APP_ENV}-${majorVersion}`});
+          await LiveUpdate.sync({channel: `${import.meta.env.VITE_REACT_APP_ENV}-${majorVersion}`});
           await LiveUpdate.reload();
           const totalEnd = performance.now(); 
           console.log(`🚀 LiveUpdate: Update applied successfully to bundle ${result.bundleId}`);
