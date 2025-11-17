@@ -1,4 +1,4 @@
-name: Deploy Live Update to Capawesome Cloud
+name: Deploy MAIN branch Live Update
 
 on:
   workflow_dispatch:
@@ -71,7 +71,7 @@ jobs:
 
           npx @capawesome/cli apps:bundles:create \
             --appId "$CAPAWESOME_APP_ID" \
-            --path build \
+            --path dist \
             --channel "$CHANNEL" \
             --artifact-type manifest \
             --commit-message "${{ github.event.head_commit.message || 'manual deploy' }}" \
